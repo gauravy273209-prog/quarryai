@@ -11,6 +11,7 @@ class Agent(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
     name = Column(String(255), nullable=False)
+    phone_number = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     system_prompt = Column(Text, nullable=True)
     voice_id = Column(String(255), nullable=True)
