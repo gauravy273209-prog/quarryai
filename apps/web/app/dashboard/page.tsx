@@ -2,10 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-async function getAgents() {
+async function getAgents(token: string) {
   try {
     const res = await fetch("http://localhost:8000/api/v1/agents/", {
-      headers: { Authorization: "Bearer dev-token" },
+      headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
     if (!res.ok) return [];
@@ -16,9 +16,10 @@ async function getAgents() {
 }
 
 export default async function DashboardPage() {
-  const { userId } = await auth();
+  const { userId, getToken } = await auth();
   if (!userId) redirect("/sign-in");
-  const agents = await getAgents();
+  const token = await getToken();
+  const agents = await getAgents(token ?? "");
 
   return (
     <div className="min-h-screen bg-gray-50">
