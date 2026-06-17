@@ -1,7 +1,8 @@
 <h1 align="center">Hey, I'm Gaurav Yadav 👋</h1>
 
 <p align="center">
-  <b>Full-Stack AI Developer · SaaS Builder · Voice AI Specialist</b><br/>
+ <b>Co-Founder @ CodeQuarry Studios · Aspiring Data Analyst · Builder of QuarryAI</b><br/>
+  Building AI products for real clients — and turning their data into decisions>
   Building real products that make money — not just tutorials.
 </p>
 
