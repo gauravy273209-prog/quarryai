@@ -1,3 +1,4 @@
+content = """\
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -76,3 +77,8 @@ export default async function DashboardPage() {
     </div>
   );
 }
+"""
+
+with open("C:/Projects/quarryai/apps/web/app/dashboard/page.tsx", "w") as f:
+    f.write(content)
+print("Done")

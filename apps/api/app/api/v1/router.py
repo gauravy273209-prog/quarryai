@@ -1,5 +1,5 @@
-from fastapi import APIRouter
-from app.api.v1.endpoints import organizations, agents, phone_numbers
+﻿from fastapi import APIRouter
+from app.api.v1.endpoints import organizations, agents, phone_numbers, calls, webhooks, analytics
 
 api_router = APIRouter()
 
@@ -14,8 +14,26 @@ api_router.include_router(
     prefix="/agents",
     tags=["agents"]
 )
+
 api_router.include_router(
     phone_numbers.router,
     prefix="/phone-numbers",
     tags=["phone-numbers"]
+)
+
+api_router.include_router(
+    calls.router,
+    prefix="/calls",
+    tags=["calls"]
+)
+
+api_router.include_router(
+    webhooks.router,
+    prefix="/webhooks",
+    tags=["webhooks"]
+)
+
+api_router.include_router(
+    analytics.router,
+    tags=["analytics"]
 )

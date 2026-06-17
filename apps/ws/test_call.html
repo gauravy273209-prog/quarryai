@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QuarryAI Voice Test</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
+        button { padding: 15px 30px; margin: 10px; font-size: 16px; cursor: pointer; }
+        #start { background: #22c55e; color: white; border: none; border-radius: 8px; }
+        #stop { background: #ef4444; color: white; border: none; border-radius: 8px; }
+        #log { background: #1e1e1e; color: #00ff00; padding: 20px; border-radius: 8px; 
+               height: 300px; overflow-y: auto; font-family: monospace; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🎙️ QuarryAI Voice Test</h1>
+    <p>Click Start to simulate a call and hear the AI respond.</p>
+    <button id="start" onclick="startCall()">📞 Start Call</button>
+    <button id="stop" onclick="stopCall()" disabled>📴 End Call</button>
+    <div id="log">Waiting to start...\n</div>
+
+    <script>
+        let ws;
+        let mediaRecorder;
+        let audioContext;
+        const log = document.getElementById('log');
+
+        function addLog(msg) {
+            log.innerHTML += msg + '\n';
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function startCall() {
+            document.getElementById('start').disabled = true;
+            document.getElementById('stop').disabled = false;
+            addLog('📞 Connecting to QuarryAI...');
+
+            // First send a text message to get a greeting
+            ws = new WebSocket('ws://localhost:8001/ws/voice');
+
+            ws.onopen = () => {
+                addLog('✅ Connected!');
+                // Simulate Twilio start event
+                ws.send(JSON.stringify({
+                    event: 'start',
+                    start: { streamSid: 'test-stream-' + Date.now() }
+                }));
+            };
+
+            ws.onmessage = async (event) => {
+                const data = JSON.parse(event.data);
+                if (data.event === 'media' && data.media?.payload) {
+                    addLog('🔊 Playing AI response...');
+                    // Decode base64 mulaw audio and play it
+                    const audioData = atob(data.media.payload);
+                    playMulaw(audioData);
+                }
+            };
+
+            ws.onclose = () => addLog('📴 Call ended');
+            ws.onerror = (e) => addLog('❌ Error: ' + e);
+
+            // Start microphone
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new AudioContext({ sampleRate: 8000 });
+                const source = audioContext.createMediaStreamSource(stream);
+                const processor = audioContext.createScriptProcessor(1024, 1, 1);
+
+                processor.onaudioprocess = (e) => {
+                    if (ws?.readyState === WebSocket.OPEN) {
+                        const input = e.inputBuffer.getChannelData(0);
+                        const mulaw = encodeMulaw(input);
+                        const b64 = btoa(String.fromCharCode(...mulaw));
+                        ws.send(JSON.stringify({
+                            event: 'media',
+                            media: { payload: b64 }
+                        }));
+                    }
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+                addLog('🎙️ Microphone active — speak now!');
+            } catch(e) {
+                addLog('⚠️ Mic error: ' + e.message + ' (using text mode)');
+                // Send a test text message instead
+                setTimeout(() => {
+                    addLog('💬 Sending test message...');
+                    // We will just listen for the greeting
+                }, 1000);
+            }
+        }
+
+        function stopCall() {
+            if (ws) ws.send(JSON.stringify({ event: 'stop' }));
+            if (ws) ws.close();
+            if (audioContext) audioContext.close();
+            document.getElementById('start').disabled = false;
+            document.getElementById('stop').disabled = true;
+            addLog('📴 You ended the call.');
+        }
+
+        function encodeMulaw(samples) {
+            const mulaw = new Uint8Array(samples.length);
+            for (let i = 0; i < samples.length; i++) {
+                let s = Math.max(-1, Math.min(1, samples[i]));
+                s = s < 0 ? -s : s;
+                const mu = 255;
+                s = Math.log(1 + mu * s) / Math.log(1 + mu);
+                mulaw[i] = Math.floor(s * 128);
+            }
+            return mulaw;
+        }
+
+        function playMulaw(mulawData) {
+            try {
+                const ctx = new AudioContext();
+                const samples = new Float32Array(mulawData.length);
+                for (let i = 0; i < mulawData.length; i++) {
+                    const mu = 255;
+                    const x = mulawData.charCodeAt(i) / 128;
+                    samples[i] = Math.sign(x) * (Math.pow(1 + mu, Math.abs(x)) - 1) / mu;
+                }
+                const buffer = ctx.createBuffer(1, samples.length, 8000);
+                buffer.copyToChannel(samples, 0);
+                const source = ctx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(ctx.destination);
+                source.start();
+            } catch(e) {
+                addLog('⚠️ Audio playback error: ' + e);
+            }
+        }
+    </script>
+</body>
+</html>
