@@ -1,34 +1,53 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 
-export default function AgentEditForm({ agent, token }: { agent: any; token: string }) {
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+export default function AgentEditForm({ agent }: { agent: { id: string; name: string; description?: string; system_prompt?: string; phone_number?: string } }) {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [data, setData] = useState(agent);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
     setSaving(true);
-    await fetch(`http://localhost:8000/api/v1/agents/${data.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ name: data.name, description: data.description, system_prompt: data.system_prompt }),
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setError(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_URL}/api/v1/agents/${data.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: data.name, description: data.description, system_prompt: data.system_prompt }),
+      });
+      if (!res.ok) throw new Error('Failed to save (' + res.status + ')');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete() {
     if (!confirm('Delete this agent? This cannot be undone.')) return;
     setDeleting(true);
-    await fetch(`http://localhost:8000/api/v1/agents/${data.id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    router.push('/dashboard');
+    try {
+      const token = await getToken();
+      await fetch(`${API_URL}/api/v1/agents/${data.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      router.push('/dashboard');
+    } catch {
+      setError('Delete failed. Please try again.');
+      setDeleting(false);
+    }
   }
 
   return (
@@ -40,6 +59,9 @@ export default function AgentEditForm({ agent, token }: { agent: any; token: str
           {deleting ? 'Deleting...' : 'Delete Agent'}
         </button>
       </div>
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
+      )}
       <div className="space-y-5">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Agent Name</label>
@@ -68,7 +90,7 @@ export default function AgentEditForm({ agent, token }: { agent: any; token: str
             className="bg-black text-white px-6 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition-colors disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
-          {saved && <span className="text-sm text-green-600">Saved!</span>}
+          {saved && <span className="text-sm text-green-600">✓ Saved!</span>}
         </div>
       </div>
     </div>
