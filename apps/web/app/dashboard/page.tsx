@@ -2,9 +2,11 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+
 async function getAgents(token: string) {
   try {
-    const res = await fetch("http://localhost:8000/api/v1/agents/", {
+    const res = await fetch(`${API_URL}/api/v1/agents/`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
@@ -48,7 +50,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="grid gap-2.5">
-            {agents.map((agent: any, index: number) => {
+            {agents.map((agent: { id: string; name: string; description?: string; phone_number?: string }, index: number) => {
               const gradient = gradients[index % gradients.length];
               return (
                 <Link key={agent.id} href={`/dashboard/agents/${agent.id}`} className="bg-white rounded-xl border border-gray-100 px-5 py-4 hover:border-blue-200 hover:shadow-md transition-all flex items-center justify-between group">
