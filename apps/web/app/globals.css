@@ -24,3 +24,14 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Clerk auth components — ensure they appear above dark theme overlays */
+.cl-rootBox,
+.cl-card,
+.cl-modal,
+.cl-modalBackdrop,
+.cl-signIn-root,
+.cl-signUp-root {
+  z-index: 9999 !important;
+  position: relative;
+}
