@@ -17,11 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider
-      afterSignInUrl="/dashboard"
-      afterSignUpUrl="/dashboard"
+      signInForceRedirectUrl="/dashboard"
+      signUpForceRedirectUrl="/dashboard"
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
-      dynamic
     >
       <html lang="en">
         <body className={inter.className}>
