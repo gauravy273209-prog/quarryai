@@ -1,11 +1,15 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
-import SignOutButton from "@/app/components/SignOutButton";
-import SidebarNav from "@/app/components/SidebarNav";
+import { auth, currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import SignOutButton from '@/app/components/SignOutButton';
+import SidebarNav from '@/app/components/SidebarNav';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  if (!userId) redirect('/sign-in');
+
+  const user = await currentUser();
+  const displayName = user?.fullName ?? user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? 'User';
+  const initials = displayName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -22,10 +26,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="px-3 py-4 border-t border-white/5">
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
             <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-violet-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">G</span>
+              <span className="text-white text-xs font-bold">{initials}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-medium truncate">Gaurav</p>
+              <p className="text-white text-xs font-medium truncate">{displayName}</p>
               <p className="text-gray-500 text-xs truncate">Free Plan</p>
             </div>
           </div>
