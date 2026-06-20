@@ -1,16 +1,19 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import AgentEditForm from "./AgentEditForm";
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import AgentEditForm from './AgentEditForm';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export default async function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  const { userId, getToken } = await auth();
+  if (!userId) redirect('/sign-in');
 
+  const token = await getToken();
   const res = await fetch(
-    `http://localhost:8000/api/v1/agents/internal/${userId}/${id}`,
-    { cache: "no-store" }
+    `${API_URL}/api/v1/agents/${id}`,
+    { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }
   );
 
   if (!res.ok) return <div className="p-10 text-red-500">Agent not found.</div>;
@@ -28,7 +31,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ id
       </nav>
       <main className="max-w-3xl mx-auto px-6 py-10">
         <Link href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600 mb-8 inline-block">Back to Agents</Link>
-        <AgentEditForm agent={agent} token={userId} />
+        <AgentEditForm agent={agent} />
       </main>
     </div>
   );
